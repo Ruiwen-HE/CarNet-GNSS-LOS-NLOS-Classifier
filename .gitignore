@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+*.log
+
+# Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Data
+*.csv
+*.hdf5
+*.h5
+*.pkl
+data/
+weights/
+models/
+*.hdf5
+*.keras
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Colab
+/content/
