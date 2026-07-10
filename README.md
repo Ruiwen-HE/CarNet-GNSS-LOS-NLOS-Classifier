@@ -132,33 +132,61 @@ Quantile Transformer → Normal Distribution
     ↓
 Reshape → (1, 1, 10)
     ↓
-┌─────────────────────────────────────┐
-│         Image Generator             │
-│  Conv2DTranspose (1×1, stride=3)    │
-│  Conv2DTranspose (3×3, stride=2)    │
-│  Conv2DTranspose (3×3, stride=2)    │
-│  Output: (12, 12, 1)               │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                  Image Generator                    │
+│  FC Layer: 1×10 → 16 × 7 × 7                       │
+│  (Data augmentation from 1D vector to C=16 maps)    │
+│  ↓                                                 │
+│  Conv2DTranspose (1×1, stride=3)                    │
+│  LeakyReLU (α=0.01)                                │
+│  ↓                                                 │
+│  Conv2DTranspose (3×3, stride=2)                    │
+│  LeakyReLU (α=0.01)                                │
+│  ↓                                                 │
+│  Conv2DTranspose (3×3, stride=2)                    │
+│  Tanh                                              │
+│  ↓                                                 │
+│  Output: (28, 28, 1)                               │
+└─────────────────────────────────────────────────────┘
     ↓
-┌─────────────────────────────────────┐
-│      Inception Module (×2)          │
-│  1×1 Conv → 3×3 Conv (LeakyReLU)   │
-│  1×1 Conv → 5×5 Conv (LeakyReLU)   │
-│  1×1 Conv → 7×7 Conv (LeakyReLU)   │
-│  Residual Connection (Add)          │
-│  MaxPooling 2×2                    │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                  Inception Block 1                  │
+│  1×1 Conv → 8 filters                              │
+│  LeakyReLU (α=0.01)                                │
+│  ├── 3×3 Conv → 8 filters (1 stacked 3×3)         │
+│  ├── 5×5 Conv → 8 filters (2 stacked 3×3)         │
+│  └── 7×7 Conv → 8 filters (3 stacked 3×3)         │
+│  Add (residual connection)                         │
+│  MaxPool2D (2×2, stride=2)                         │
+└─────────────────────────────────────────────────────┘
     ↓
-Global Average Pooling (GAP)
+┌─────────────────────────────────────────────────────┐
+│                  Inception Block 2                  │
+│  1×1 Conv → 16 filters                             │
+│  LeakyReLU (α=0.01)                                │
+│  ├── 3×3 Conv → 16 filters                        │
+│  ├── 5×5 Conv → 16 filters                        │
+│  └── 7×7 Conv → 16 filters                        │
+│  Add (residual connection)                         │
+└─────────────────────────────────────────────────────┘
     ↓
-Dense(32) → LeakyReLU → Dropout(0.4)
+Global Average Pooling (GAP) → (16)
+    ↓
+Dense(32) → LeakyReLU (α=0.01)
+    ↓
+Dropout(0.4)
     ↓
 Dense(1) → Sigmoid
     ↓
 LOS/NLOS Prediction
 ```
 
----
+**Total Parameters:** 27,964
+
+**Key Design Choices:**
+- **Image Generator**: FC layer for data augmentation (1×10 → 16×7×7), followed by three Conv2DTranspose layers to achieve 28×28×1 output. LeakyReLU (α=0.01) for all layers except Tanh for the final layer.
+- **Inception Module**: Three parallel paths with equivalent kernel sizes of 3×3, 5×5, and 7×7. Uses addition (residual connection) instead of concatenation.
+- **Classifier Head**: GAP → Dense(32) → Dropout(0.4) → Sigmoid.
 
 ## 🚀 Quick Start
 
