@@ -23,15 +23,15 @@ def inception_block(x, n_map):
     x = tf.keras.layers.Conv2D(n_map, (1, 1), strides=(1, 1), padding='same')(x)
     x = tf.keras.layers.LeakyReLU(alpha=0.01)(x)
     
-    # Path 1: 3x3 convolution
+    # Path 1: 3x3 convolution (1 stacked 3x3)
     x1 = tf.keras.layers.Conv2D(n_map, (3, 3), strides=(1, 1), padding='same')(x)
     x1 = tf.keras.layers.LeakyReLU(alpha=0.01)(x1)
     
-    # Path 2: 5x5 convolution
+    # Path 2: 5x5 convolution (2 stacked 3x3)
     x2 = tf.keras.layers.Conv2D(n_map, (5, 5), strides=(1, 1), padding='same')(x)
     x2 = tf.keras.layers.LeakyReLU(alpha=0.01)(x2)
     
-    # Path 3: 7x7 convolution
+    # Path 3: 7x7 convolution (3 stacked 3x3)
     x3 = tf.keras.layers.Conv2D(n_map, (7, 7), strides=(1, 1), padding='same')(x)
     x3 = tf.keras.layers.LeakyReLU(alpha=0.01)(x3)
     
@@ -50,35 +50,34 @@ def CarNet(raw_features):
         Keras Model instance
     """
     # Input: 10 GNSS features
-    x = tf.keras.layers.Reshape((1, 1, 10))(raw_features)
+    x = raw_features
     
     # ==================== Image Generator ====================
-    # Upsample to 3x3x10
-    x = tf.keras.layers.Conv2DTranspose(
-        10, (1, 1), strides=(3, 3), padding='same', use_bias=False
-    )(x)
+    # FC Layer: 1×10 → 16 × 7 × 7 (Data augmentation)
+    x = tf.keras.layers.Dense(16 * 7 * 7, use_bias=False)(x)
+    x = tf.keras.layers.Reshape((7, 7, 16))(x)
     x = tf.keras.layers.LeakyReLU(alpha=0.01)(x)
     
-    # Upsample to 6x6x5
-    x = tf.keras.layers.Conv2DTranspose(
-        5, (3, 3), strides=(2, 2), padding='same', use_bias=False
-    )(x)
+    # Upsample to 14×14×10
+    x = tf.keras.layers.Conv2DTranspose(10, (1, 1), strides=(2, 2), padding='same', use_bias=False)(x)
     x = tf.keras.layers.LeakyReLU(alpha=0.01)(x)
     
-    # Upsample to 12x12x1 with tanh activation
-    x = tf.keras.layers.Conv2DTranspose(
-        1, (3, 3), strides=(2, 2), padding='same', use_bias=False, activation='tanh'
-    )(x)
+    # Upsample to 28×28×5
+    x = tf.keras.layers.Conv2DTranspose(5, (3, 3), strides=(2, 2), padding='same', use_bias=False)(x)
+    x = tf.keras.layers.LeakyReLU(alpha=0.01)(x)
+    
+    # Final output: 28×28×1 with Tanh
+    x = tf.keras.layers.Conv2DTranspose(1, (3, 3), strides=(1, 1), padding='same', use_bias=False, activation='tanh')(x)
     
     # ==================== Image Classifier ====================
-    # First Inception block
+    # Inception Block 1 (8 filters) + MaxPool
     x = inception_block(x, 8)
     x = tf.keras.layers.MaxPool2D((2, 2), strides=(2, 2), padding='same')(x)
     
-    # Second Inception block
+    # Inception Block 2 (16 filters) - no MaxPool
     x = inception_block(x, 16)
     
-    # Global Average Pooling
+    # Global Average Pooling → (16)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
     
     # Fully connected layers
@@ -92,20 +91,13 @@ def CarNet(raw_features):
 
 
 def create_model():
-    """Create and compile CarNet model."""
+    """Create CarNet model."""
     inputs = tf.keras.layers.Input(shape=(10,))
     model = CarNet(inputs)
     return model
 
 
-def get_model_summary():
-    """Print model summary."""
+if __name__ == "__main__":
     model = create_model()
     model.summary()
-    return model
-
-
-if __name__ == "__main__":
-    # Test model creation
-    model = create_model()
     print(f"Total parameters: {model.count_params():,}")
