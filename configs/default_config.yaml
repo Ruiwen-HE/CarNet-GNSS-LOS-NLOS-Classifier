@@ -1,0 +1,55 @@
+# CarNet Default Configuration
+
+model:
+  name: "CarNet"
+  input_shape: 10
+  parameters: 27964
+
+training:
+  epochs: 50
+  batch_size: 256
+  learning_rate: 0.01
+  optimizer: "sgd"
+  loss: "binary_crossentropy"
+  metrics: ["accuracy"]
+
+preprocessing:
+  transformer: "QuantileTransformer"
+  output_distribution: "normal"
+
+features:
+  names:
+    - "f4"
+    - "f7"
+    - "f9"
+    - "f10"
+    - "f11"
+    - "f13"
+    - "f17"
+    - "f22"
+    - "f23"
+    - "f24"
+  target: "LosNLos"
+
+callbacks:
+  checkpoint:
+    monitor: "val_accuracy"
+    save_best_only: true
+  early_stopping:
+    monitor: "val_accuracy"
+    patience: 10
+    restore_best_weights: true
+  reduce_lr:
+    monitor: "val_accuracy"
+    factor: 0.5
+    patience: 5
+    min_lr: 1e-6
+
+inference:
+  threshold: 0.5
+  batch_size: 256
+
+paths:
+  weights: "models/best_model.hdf5"
+  qt: "models/quantile_transformer.pkl"
+  final_model: "models/carnet_final.keras"
