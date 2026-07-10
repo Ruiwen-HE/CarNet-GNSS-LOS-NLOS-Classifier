@@ -23,14 +23,28 @@
 
 ### Performance Metrics
 
+All results are reported as **6-fold cross-validation mean accuracy** across six geographically distinct urban datasets (Nantes, Paris, Toulouse, Full Nantes, Boulevards, La Défense). Each fold uses one complete city dataset as the test set and the remaining five as training data, ensuring the model is evaluated on entirely unseen environments.
+
 | Metric | Value |
 |--------|-------|
-| Overall Accuracy | **81.47%** |
-| LOS Precision | **83.30%** |
-| NLOS Precision | **70.99%** |
+| Overall Accuracy (Cross-Validation) | **81.47%** |
+| LOS Precision (Cross-Validation) | **83.30%** |
+| NLOS Precision (Cross-Validation) | **70.99%** |
 | Model Parameters | 27,964 |
-| GPU Inference | 2.91 ms/sample |
-| CPU Inference | 4.68 ms/sample |
+| GPU Inference (Tesla K80) | 2.91 ms/sample |
+| CPU Inference (Intel Xeon @ 2.20GHz) | 4.68 ms/sample |
+
+**Hardware Configuration:**
+- **GPU**: Tesla K80 (12 GB GDDR5 VRAM)
+- **CPU**: Intel Xeon @ 2.20 GHz
+- **RAM**: 13 GB
+- **Environment**: Google Colab
+
+**Inference Latency Note:**
+- GNSS receivers typically operate at 5 Hz (200 ms per epoch)
+- CarNet processes **~42 samples** on CPU and **~68 samples** on GPU per epoch
+- This is well above the average number of visible satellites (~25 in full GNSS constellations)
+- Demonstrates strong potential for real-time embedded deployment
 
 ### Positioning Accuracy Improvement (Horizontal Position Error - HPE)
 
